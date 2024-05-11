@@ -16,12 +16,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as MediaLibrary from "expo-media-library";
-import { Text} from "moti";
-import {Skeleton } from "moti/skeleton"
+import { Text } from "moti";
+import { Skeleton } from "moti/skeleton";
 import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 import ViewShot, { captureRef } from "react-native-view-shot";
-
 
 export default function App() {
   const [albums, setAlbums] = useState(null);
@@ -37,10 +36,8 @@ export default function App() {
     }
     const fetchedAlbums = await MediaLibrary.getAlbumsAsync({
       includeSmartAlbums: true,
-     
     });
     setAlbums(fetchedAlbums);
-    
   }
 
   const handleAlbumSelect = (album) => {
@@ -49,29 +46,49 @@ export default function App() {
   const Width = Dimensions.get("screen").width;
   const Height = Dimensions.get("screen").height;
   return (
-     
     <View style={styles.container}>
-        <Feather
+      <Feather
         name="menu"
         size={24}
         color="white"
         onPress={getAlbums}
         style={styles.MenuContainer}
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{justifyContent:"center"}} style={{position:"absolute",zIndex:10,top:45,flexDirection:"column",marginHorizontal:10,height:20,overflow:"scroll"}}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{
+          position: "absolute",
+          zIndex: 10,
+          top: 50,
+          flexDirection: "column",
+          marginHorizontal: 10,
+          height: 20,
+        }}
+      >
         {albums &&
           albums.map((album, index) => (
-            <Pressable key={index}  onPress={() => handleAlbumSelect(album)}>
-              <Text transition={{type:"spring"}}
-       style={{fontSize:15,color:"white"}}>{album.title}</Text>
+            <Pressable key={index} onPress={() => handleAlbumSelect(album)}>
+              <Text
+                transition={{ type: "spring" }}
+                style={{
+                  fontSize: 18,
+                  color: "white",
+                  fontFamily: "Nunito_600SemiBold",
+                }}
+              >
+                {album.title}
+              </Text>
             </Pressable>
           ))}
       </ScrollView>
       {selectedAlbum && <AlbumEntry album={selectedAlbum} />}
-      <Skeleton width={Width} height={Height} colors={["#ababab","#C68E7B","#00D6B3","#66D1FF"]}/>
+      <Skeleton
+        width={Width}
+        height={Height}
+        colors={["#ababab", "#C68E7B", "#00D6B3", "#66D1FF"]}
+      />
       <StatusBar barStyle={"light-content"} />
     </View>
-   
   );
 }
 
@@ -79,6 +96,7 @@ function AlbumEntry({ album }) {
   const [assets, setAssets] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
+  const [showButtons, setShowButtons] = useState(false);
 
   const Height = Dimensions.get("screen").height;
   const Width = Dimensions.get("screen").width;
@@ -87,6 +105,7 @@ function AlbumEntry({ album }) {
     async function getAlbumAssets() {
       const albumAssets = await MediaLibrary.getAssetsAsync({
         album,
+        mediaType: "photo", // Only fetch photo assets
       });
       setAssets(albumAssets.assets);
       if (albumAssets.assets.length > 0) {
@@ -109,6 +128,7 @@ function AlbumEntry({ album }) {
 
   const handleImagePress = () => {
     setIsAnimating(!isAnimating);
+    setShowButtons(!showButtons);
   };
 
   const ref = useRef(null);
@@ -138,44 +158,55 @@ function AlbumEntry({ album }) {
     <View key={album.id} style={styles.albumContainer}>
       <View style={styles.albumAssetsContainer}>
         {assets.length > 0 && (
-        <ImageBackground source={{uri:imageShare}} resizeMode="cover" style={{flex:1}}>
-          <ViewShot ref={ref}>
-            <Pressable onPress={handleImagePress}>
-              <LinearGradient
-                colors={["rgba(0,0,0,0.5)", "transparent"]}
-                style={styles.background}
-              />
-
-              <Image
-                source={{ uri: imageShare }}
-                height={Height}
-                width={Width}
-                style={styles.image}
+          <ImageBackground
+            source={{ uri: imageShare }}
+            resizeMode="cover"
+            style={{ flex: 1, width: Width, height: Height }}
+          >
+            <ViewShot ref={ref}>
+              <Pressable onPress={handleImagePress}>
+                <LinearGradient
+                  colors={["rgba(0,0,0,0.5)", "transparent"]}
+                  style={styles.background}
                 />
 
-              <LinearGradient
-                colors={["transparent", "rgba(0,0,0,0.5)"]}
-                style={styles.backgroundTwo}
+                <Image
+                  source={{ uri: imageShare }}
+                  height={Height}
+                  width={Width}
+                  style={styles.image}
                 />
-            </Pressable>
-          </ViewShot>
-                </ImageBackground>
+
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.5)"]}
+                  style={styles.backgroundTwo}
+                />
+              </Pressable>
+            </ViewShot>
+          </ImageBackground>
         )}
-        <SafeAreaView style={styles.ButtonContainer}>
-          <MaterialIcons
-            name="navigate-before"
-            size={24}
-            color="white"
-            onPress={handlePrevious}
-          />
-          <Ionicons name="share" color={"white"} size={24} onPress={onShare} />
-          <MaterialIcons
-            name="navigate-next"
-            size={24}
-            color="white"
-            onPress={handleNext}
-          />
-        </SafeAreaView>
+        {showButtons && (
+          <View style={[styles.ButtonContainer, styles.buttonBottom]}>
+            <MaterialIcons
+              name="navigate-before"
+              size={25}
+              color="#fff"
+              onPress={handlePrevious}
+            />
+            <Ionicons
+              name="settings"
+              color={"white"}
+              size={25}
+              onPress={onShare}
+            />
+            <MaterialIcons
+              name="navigate-next"
+              size={25}
+              color="#fff"
+              onPress={handleNext}
+            />
+          </View>
+        )}
       </View>
     </View>
   );
@@ -184,23 +215,38 @@ function AlbumEntry({ album }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    
+  },
+  topContainer: {
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    padding: 5,
+    shadowColor: "rgba(31, 38, 135, 0.37)",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowRadius: 32,
+    shadowOpacity: 1,
+    elevation: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.18)",
+    height: 25,
   },
   background: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     height: 500,
-    zIndex:100
+    zIndex: 100,
   },
-  backgroundTwo:{
-    position: 'absolute',
+  backgroundTwo: {
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     height: 500,
-    zIndex:100
+    zIndex: 100,
   },
   MenuContainer: {
     position: "absolute",
@@ -209,6 +255,19 @@ const styles = StyleSheet.create({
     top: 40,
     right: 5,
     zIndex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    padding: 5,
+    shadowColor: "rgba(31, 38, 135, 0)",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowRadius: 32,
+    shadowOpacity: 1,
+    elevation: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
   },
   albumContainer: {
     gap: 4,
@@ -226,27 +285,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
   },
-  dialContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  buttonBottom: {
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    paddingVertical: 25,
+    shadowColor: "rgba(31, 38, 135, 0)",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowRadius: 32,
+    shadowOpacity: 1,
+    elevation: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
   },
   ButtonContainer: {
     flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     position: "absolute",
-    bottom: 60,
+    bottom: 30,
+    left: 0,
+    right: 0,
     zIndex: 1,
-    paddingHorizontal:10,
-    width: "100%",
-  },
-  TextContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    position: "absolute",
-    paddingHorizontal: 10,
-    bottom: 50,
-    zIndex: 1,
+    marginHorizontal: 10,
   },
 });

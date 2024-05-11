@@ -1,48 +1,67 @@
+/* eslint-disable react-native/no-inline-styles */
+import React, { useState } from 'react';
+import { LayoutAnimation, Platform, Text, UIManager } from 'react-native';
+import { TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native';
+import { View } from 'react-native';
+import { Dimensions } from 'react-native';
+import { StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native';
 import { StyleSheet } from 'react-native';
-import { MotiView } from 'moti';
+import AlbumsList from 'react-native-album-list'
 
-function Shape() {
+
+
+export default function App() {
+  const [album,setAlbum] = React.useState([])
+  AlbumsList.getImageList({
+    title: true,
+    name: false,
+    size: true,
+    description: true,
+    location: false,
+    date: true,
+    orientation: true,
+    type: false,
+    album: true,
+    dimensions: false
+  }).then(list => console.log(setAlbum(list)));
+
   return (
-    <MotiView
-      from={{
-        translateY: -100,
-      }}
-      animate={{
-        translateY: 0,
-      }}
-      transition={{
-        loop: true,
-        type: 'timing',
-        duration: 1500,
-        delay: 100,
-      }}
-      style={styles.shape}
-    />
+    <View style={style.container}>
+      <Text>text {album}</Text>
+    </View>
   );
 }
 
-export default function Loop() {
-  return (
-    <MotiView style={styles.container}>
-      <Shape />
-    </MotiView>
-  );
-}
-
-const styles = StyleSheet.create({
-  shape: {
-    justifyContent: 'center',
-    height: 250,
-    width: 250,
-    borderRadius: 25,
-    marginRight: 10,
-    backgroundColor: 'white',
-  },
+const style = StyleSheet.create({
   container: {
+    backgroundColor: '#000',
     flex: 1,
+  },
+  title: {
+    fontWeight: '900',
+    fontSize: 24,
+    paddingVertical: 24,
+    fontFamily: 'Avenir',
+    color: '#cdac81',
+    textAlign: 'center',
+  },
+  buttonOpen: {
+    margin: 24,
+    backgroundColor: '#fff',
+    padding: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    backgroundColor: '#9c1aff',
+    width:48,
+  },
+  textOpen: {
+    fontWeight: 'bold',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.9)',
   },
 });
