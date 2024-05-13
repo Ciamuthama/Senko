@@ -1,224 +1,141 @@
-import { useState, useEffect, useReducer, useRef } from "react";
-import {
-  Button,
-  ScrollView,
-  StyleSheet,
-  Platform,
-  Pressable,
-  Image,
-  Share,
-  View,
-  TouchableOpacity,
-  ScrollViewComponent,
-  Dimensions,
-  StatusBar,
-  ImageBackground,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as MediaLibrary from "expo-media-library";
-import { Text } from "moti";
-import { Skeleton } from "moti/skeleton";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import ViewShot, { captureRef } from "react-native-view-shot";
+/* eslint-disable react-native/no-inline-styles */
+import React, { useEffect, useRef, useState } from 'react';
+import { pick, types } from 'react-native-document-picker'
+import { Button,StyleSheet, Text,Image, Dimensions,ScrollView, Pressable, StatusBar } from 'react-native';
+import { View } from 'moti';
+import { MaterialIcons, Ionicons, AntDesign, FontAwesome } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Share from "react-native-share"
+import ViewShot, { captureRef } from 'react-native-view-shot';
+
+
 
 export default function App() {
-  const [albums, setAlbums] = useState(null);
-  const [selectedAlbum, setSelectedAlbum] = useState(null);
-  const [permissionResponse, requestPermission] = MediaLibrary.usePermissions();
-
-  async function getAlbums() {
-    if (permissionResponse?.status !== "granted") {
-      const permissionResult = await requestPermission();
-      if (permissionResult.status !== "granted") {
-        return; // User did not grant permission, so return early
-      }
-    }
-    const fetchedAlbums = await MediaLibrary.getAlbumsAsync({
-      includeSmartAlbums: true,
-    });
-    setAlbums(fetchedAlbums);
-  }
-
-  const handleAlbumSelect = (album) => {
-    setSelectedAlbum(album);
-  };
-  const Width = Dimensions.get("screen").width;
-  const Height = Dimensions.get("screen").height;
-  return (
-    <View style={styles.container}>
-      <Feather
-        name="menu"
-        size={24}
-        color="white"
-        onPress={getAlbums}
-        style={styles.MenuContainer}
-      />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{
-          position: "absolute",
-          zIndex: 10,
-          top: 50,
-          flexDirection: "column",
-          marginHorizontal: 10,
-          height: 20,
-        }}
-      >
-        {albums &&
-          albums.map((album, index) => (
-            <Pressable key={index} onPress={() => handleAlbumSelect(album)}>
-              <Text
-                transition={{ type: "spring" }}
-                style={{
-                  fontSize: 18,
-                  color: "white",
-                  fontFamily: "Nunito_600SemiBold",
-                }}
-              >
-                {album.title}
-              </Text>
-            </Pressable>
-          ))}
-      </ScrollView>
-      {selectedAlbum && <AlbumEntry album={selectedAlbum} />}
-      <Skeleton
-        width={Width}
-        height={Height}
-        colors={["#ababab", "#C68E7B", "#00D6B3", "#66D1FF"]}
-      />
-      <StatusBar barStyle={"light-content"} />
-    </View>
-  );
-}
-
-function AlbumEntry({ album }) {
-  const [assets, setAssets] = useState([]);
+  const [image, setImage] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
   const [showButtons, setShowButtons] = useState(false);
-
-  const Height = Dimensions.get("screen").height;
   const Width = Dimensions.get("screen").width;
+  const Height = Dimensions.get("screen").height;
+  const selectone = 1;
 
-  useEffect(() => {
-    async function getAlbumAssets() {
-      const albumAssets = await MediaLibrary.getAssetsAsync({
-        album,
-        mediaType: "photo", // Only fetch photo assets
+  const open = async () => {
+    try {
+      const results = await pick({
+        mode: "open",
+        allowMultiSelection: true,
+        type: [types.images],
       });
-      setAssets(albumAssets.assets);
-      if (albumAssets.assets.length > 0) {
+
+      if (results) {
+        const ImgArr = results;
+        setImage(ImgArr);
+      } else {
+        console.error(results);
+      }
+
+      if (results.length > 0) {
         setCurrentIndex(0);
       }
+    } catch (err) {
+      // see error handling
     }
-    getAlbumAssets();
-  }, [album]);
+  };
 
   useEffect(() => {
-    let interval;
+    let interval:any
     if (isAnimating) {
       interval = setInterval(() => {
-        setCurrentIndex((currentIndex + 1) % assets.length);
+        setCurrentIndex((currentIndex + 1) % image.length);
       }, 135); // Change the interval duration as needed
     }
 
     return () => clearInterval(interval);
-  }, [currentIndex, assets.length, isAnimating]);
+  }, [currentIndex, image.length, isAnimating]);
 
   const handleImagePress = () => {
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
   };
 
-  const ref = useRef(null);
-  const imageShare = assets[currentIndex]?.uri;
-
-  const onShare = async () => {
-    try {
-      const uri = await captureRef(ref, {
-        format: "jpg",
-        quality: 1,
-      });
-      await Share.share({ url: uri });
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
   const handlePrevious = () => {
-    setCurrentIndex((currentIndex - 1 + assets.length) % assets.length);
+    setCurrentIndex((currentIndex - 1 + image.length) % image.length);
   };
 
   const handleNext = () => {
-    setCurrentIndex((currentIndex + 1) % assets.length);
+    setCurrentIndex((currentIndex + 1) % image.length);
   };
 
+  const ref = useRef(null);
+const share = async() =>{
+
+  try {
+    const uri = await captureRef(ref, {
+      format: "jpg",
+      quality: 1,
+    });
+  
+      Share.open({title:image[currentIndex].fileName, url:uri})
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((err) => {
+        err && console.log(err);
+      });
+  } catch (error) {
+    
+  }
+}
+
+  const img = image[currentIndex]?.uri || "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/500px-No-Image-Placeholder.svg.png?20200912122019";
+
   return (
-    <View key={album.id} style={styles.albumContainer}>
-      <View style={styles.albumAssetsContainer}>
-        {assets.length > 0 && (
-          <ImageBackground
-            source={{ uri: imageShare }}
-            resizeMode="cover"
-            style={{ flex: 1, width: Width, height: Height }}
-          >
-            <ViewShot ref={ref}>
-              <Pressable onPress={handleImagePress}>
-                <LinearGradient
-                  colors={["rgba(0,0,0,0.5)", "transparent"]}
+    <View>
+      <View style={styles.title}>
+        <FontAwesome name="share" size={24} color="white" onPress={share}/>
+        {/* <MaterialIcons name="add-a-photo" size={24} color="white" onPress={open} /> */}
+        </View>
+      
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Pressable onPress={handleImagePress}>
+        <LinearGradient
+                  colors={["rgba(0,0,0,0.6)", "transparent"]}
                   style={styles.background}
                 />
+                 <ViewShot ref={ref}>
 
-                <Image
-                  source={{ uri: imageShare }}
-                  height={Height}
-                  width={Width}
-                  style={styles.image}
-                />
-
-                <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.5)"]}
+          <Image source={{ uri: img }} height={Height} width={Width} />
+                 </ViewShot>
+          <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.4)"]}
                   style={styles.backgroundTwo}
                 />
-              </Pressable>
-            </ViewShot>
-          </ImageBackground>
-        )}
+        </Pressable>
         {showButtons && (
-          <View style={[styles.ButtonContainer, styles.buttonBottom]}>
-            <MaterialIcons
-              name="navigate-before"
-              size={25}
-              color="#fff"
-              onPress={handlePrevious}
-            />
-            <Ionicons
-              name="settings"
-              color={"white"}
-              size={25}
-              onPress={onShare}
-            />
-            <MaterialIcons
-              name="navigate-next"
-              size={25}
-              color="#fff"
-              onPress={handleNext}
-            />
+          <View style={styles.ButtonContainer} transition={{type:"decay"}}>
+            <AntDesign name="swapleft" size={25} color="white"  onPress={handlePrevious} style={styles.buttonBottom}/>
+            <AntDesign name="swapright" size={25} color="white"  onPress={handleNext}  style={styles.buttonBottom} />
           </View>
         )}
-      </View>
+      </ScrollView>
+      <StatusBar barStyle={"light-content"} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: '#000',
     flex: 1,
   },
-  topContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    padding: 5,
+  title: {
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    position:"absolute",
+    top: Dimensions.get("screen").height/2.5,
+    right:5,
+    zIndex:1,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     shadowColor: "rgba(31, 38, 135, 0.37)",
     shadowOffset: {
       width: 0,
@@ -230,7 +147,53 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.18)",
-    height: 25,
+   
+  },
+  buttonOpen: {
+    margin: 24,
+    backgroundColor: '#fff',
+    padding: 12,
+    alignItems: 'center',
+    width:48,
+  },
+  textOpen: {
+    fontWeight: 'bold',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+  buttonBottom: {
+    backgroundColor: "rgba(255, 255, 255, 0.10)",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    shadowColor: "rgba(31, 38, 135, 0)",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowRadius: 32,
+    shadowOpacity: 1,
+    elevation: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.28)",
+  },
+  ButtonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    position: "absolute",
+    bottom: 5,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    marginHorizontal: 10,
+    
   },
   background: {
     position: "absolute",
@@ -248,68 +211,4 @@ const styles = StyleSheet.create({
     height: 500,
     zIndex: 100,
   },
-  MenuContainer: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
-    top: 40,
-    right: 5,
-    zIndex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
-    padding: 5,
-    shadowColor: "rgba(31, 38, 135, 0)",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowRadius: 32,
-    shadowOpacity: 1,
-    elevation: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.28)",
-  },
-  albumContainer: {
-    gap: 4,
-    position: "relative",
-  },
-  albumAssetsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    position: "relative",
-  },
-  image: {
-    position: "relative",
-  },
-  controlsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  buttonBottom: {
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
-    paddingVertical: 25,
-    shadowColor: "rgba(31, 38, 135, 0)",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowRadius: 32,
-    shadowOpacity: 1,
-    elevation: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.28)",
-  },
-  ButtonContainer: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-    marginHorizontal: 10,
-  },
-});
+})
