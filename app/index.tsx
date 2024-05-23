@@ -1,13 +1,28 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useRef, useState } from 'react';
-import { pick, types } from 'react-native-document-picker'
-import { Button,StyleSheet, Text,Image, Dimensions,ScrollView, Pressable, StatusBar } from 'react-native';
-import { View } from 'moti';
-import { MaterialIcons, Ionicons, AntDesign, FontAwesome } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import Share from "react-native-share"
-import ViewShot, { captureRef } from 'react-native-view-shot';
-
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { pick, types } from "react-native-document-picker";
+import {
+  Button,
+  StyleSheet,
+  Text,
+  Image,
+  Dimensions,
+  ScrollView,
+  Pressable,
+} from "react-native";
+import { View } from "moti";
+import {
+  MaterialIcons,
+  Ionicons,
+  AntDesign,
+  FontAwesome,
+  Fontisto,
+} from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import Share from "react-native-share";
+import ViewShot, { captureRef } from "react-native-view-shot";
+import FastImage from "react-native-fast-image"
+import { StatusBar } from 'expo-status-bar';
 
 
 export default function App() {
@@ -17,37 +32,41 @@ export default function App() {
   const [showButtons, setShowButtons] = useState(false);
   const Width = Dimensions.get("screen").width;
   const Height = Dimensions.get("screen").height;
-  const selectone = 1;
+  
 
-  const open = async () => {
-    try {
-      const results = await pick({
-        mode: "open",
-        allowMultiSelection: true,
-        type: [types.images],
-      });
+  const open = useMemo(
+    () => async () => {
+      try {
+        const results = await pick({
+          mode: "open",
+          allowMultiSelection: true,
+          type: [types.images],
+        });
 
-      if (results) {
-        const ImgArr = results;
-        setImage(ImgArr);
-      } else {
-        console.error(results);
+        if (results) {
+          const ImgArr = results;
+          setImage(ImgArr);
+        } else {
+          console.error(results);
+        }
+
+        if (results.length > 0) {
+          setCurrentIndex(0);
+        }
+      } catch (err) {
+        // see error handling
       }
+    },
+    []
+  );
 
-      if (results.length > 0) {
-        setCurrentIndex(0);
-      }
-    } catch (err) {
-      // see error handling
-    }
-  };
 
   useEffect(() => {
-    let interval:any
-    if (isAnimating) {
+    let interval: any;
+    if (isAnimating && image.length > 0) {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
-      }, 135); // Change the interval duration as needed
+      }, 200); // Change the interval duration as needed
     }
 
     return () => clearInterval(interval);
@@ -67,75 +86,103 @@ export default function App() {
   };
 
   const ref = useRef(null);
-const share = async() =>{
-
-  try {
-    const uri = await captureRef(ref, {
-      format: "jpg",
-      quality: 1,
-    });
-  
-      Share.open({title:image[currentIndex].fileName, url:uri})
-      .then((res) => {
-        console.log(res);
-      })
-      .catch((err) => {
-        err && console.log(err);
+  const share = async () => {
+    try {
+      const uri = await captureRef(ref, {
+        format: "jpg",
+        quality: 1,
       });
-  } catch (error) {
-    
-  }
-}
 
-  const img = image[currentIndex]?.uri || "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/500px-No-Image-Placeholder.svg.png?20200912122019";
+      Share.open({ title: image[currentIndex].fileName, url: uri })
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((err) => {
+          err && console.log(err);
+        });
+    } catch (error) {}
+  };
+
+  const img =
+    image[currentIndex]?.uri ||
+    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/500px-No-Image-Placeholder.svg.png?20200912122019";
 
   return (
-    <View>
-      <View style={styles.title}>
-        <FontAwesome name="share" size={24} color="white" onPress={share}/>
-        {/* <MaterialIcons name="add-a-photo" size={24} color="white" onPress={open} /> */}
-        </View>
-      
+    <View style={{backgroundColor:"white",backfaceVisibility:"hidden"}}>
+      <View style={styles.titleContainer}>
+        <MaterialIcons
+          name="add-a-photo"
+          size={24}
+          color="white"
+          onPress={open}
+          style={styles.title}
+        />
+        <Fontisto
+          name="share"
+          size={24}
+          color="white"
+          onPress={share}
+          style={styles.title}
+        />
+      </View>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <Pressable onPress={handleImagePress}>
-        <LinearGradient
-                  colors={["rgba(0,0,0,0.6)", "transparent"]}
-                  style={styles.background}
-                />
-                 <ViewShot ref={ref}>
-
-          <Image source={{ uri: img }} height={Height} width={Width} />
-                 </ViewShot>
           <LinearGradient
-                  colors={["transparent", "rgba(0,0,0,0.4)"]}
-                  style={styles.backgroundTwo}
-                />
+            colors={["rgba(0,0,0,0.5)", "transparent"]}
+            style={styles.background}
+          />
+          <ViewShot ref={ref}>
+            <FastImage source={{ uri: img, priority:FastImage.priority.high}} style={{height:Height, width:Width}} resizeMode={FastImage.resizeMode.cover} />
+          </ViewShot>
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.8)"]}
+            style={styles.backgroundTwo}
+          />
         </Pressable>
         {showButtons && (
-          <View style={styles.ButtonContainer} transition={{type:"decay"}}>
-            <AntDesign name="swapleft" size={25} color="white"  onPress={handlePrevious} style={styles.buttonBottom}/>
-            <AntDesign name="swapright" size={25} color="white"  onPress={handleNext}  style={styles.buttonBottom} />
+          <View style={styles.ButtonContainer} transition={{ type: "decay" }}>
+            <AntDesign
+              name="swapleft"
+              size={25}
+              color="white"
+              onPress={handlePrevious}
+              style={styles.buttonBottom}
+            />
+            <AntDesign
+              name="swapright"
+              size={25}
+              color="white"
+              onPress={handleNext}
+              style={styles.buttonBottom}
+            />
           </View>
         )}
       </ScrollView>
-      <StatusBar barStyle={"light-content"} />
+      <StatusBar style="auto"/>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     flex: 1,
+  },
+
+  titleContainer: {
+    position: "absolute",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    top: 50,
+    zIndex: 1,
+    width: "100%",
   },
   title: {
     backgroundColor: "rgba(255, 255, 255, 0.10)",
-    position:"absolute",
-    top: Dimensions.get("screen").height/2.5,
-    right:5,
-    zIndex:1,
     paddingVertical: 5,
     paddingHorizontal: 10,
+    marginHorizontal: 10,
     shadowColor: "rgba(31, 38, 135, 0.37)",
     shadowOffset: {
       width: 0,
@@ -147,24 +194,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.18)",
-   
   },
   buttonOpen: {
     margin: 24,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 12,
-    alignItems: 'center',
-    width:48,
+    alignItems: "center",
+    width: 48,
   },
   textOpen: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   header: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: "rgba(0,0,0,0.9)",
   },
   buttonBottom: {
     backgroundColor: "rgba(255, 255, 255, 0.10)",
@@ -188,12 +234,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     position: "absolute",
-    bottom: 5,
+    bottom: 60,
     left: 0,
     right: 0,
     zIndex: 1,
     marginHorizontal: 10,
-    
   },
   background: {
     position: "absolute",
@@ -208,7 +253,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: 500,
+    height: 700,
     zIndex: 100,
   },
-})
+});
