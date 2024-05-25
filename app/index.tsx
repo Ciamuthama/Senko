@@ -2,10 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { pick, types } from "react-native-document-picker";
 import {
-  Button,
   StyleSheet,
-  Text,
-  Image,
   Dimensions,
   ScrollView,
   Pressable,
@@ -13,9 +10,7 @@ import {
 import { View } from "moti";
 import {
   MaterialIcons,
-  Ionicons,
   AntDesign,
-  FontAwesome,
   Fontisto,
 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,6 +18,7 @@ import Share from "react-native-share";
 import ViewShot, { captureRef } from "react-native-view-shot";
 import FastImage from "react-native-fast-image"
 import { StatusBar } from 'expo-status-bar';
+import { Audio } from 'expo-av';
 
 
 export default function App() {
@@ -32,7 +28,7 @@ export default function App() {
   const [showButtons, setShowButtons] = useState(false);
   const Width = Dimensions.get("screen").width;
   const Height = Dimensions.get("screen").height;
-  
+  const [sound, setSound] = useState<Audio.Sound>();
 
   const open = useMemo(
     () => async () => {
@@ -60,21 +56,44 @@ export default function App() {
     []
   );
 
+  useEffect(() => {
+    const loadSound = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('./assets/bell.mp3')
+        );
+        setSound(sound);
+      } catch (error) {
+        console.error('Error loading sound:', error);
+      }
+    };
+
+    loadSound();
+
+    return () => {
+      sound?.unloadAsync();
+    };
+  }, []);
 
   useEffect(() => {
     let interval: any;
-    if (isAnimating && image.length > 0) {
+    if (isAnimating && sound && image.length > 0) {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
       }, 200); // Change the interval duration as needed
+      sound.playAsync();
     }
 
-    return () => clearInterval(interval);
-  }, [currentIndex, image.length, isAnimating]);
+    return () => {
+      clearInterval(interval);
+      sound?.stopAsync();
+    };
+  }, [currentIndex, image.length, isAnimating, sound]);
 
   const handleImagePress = () => {
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
+    sound?.pauseAsync();
   };
 
   const handlePrevious = () => {
@@ -126,7 +145,7 @@ export default function App() {
         />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} overScrollMode="never">
         <Pressable onPress={handleImagePress}>
           <LinearGradient
             colors={["rgba(0,0,0,0.5)", "transparent"]}
@@ -159,7 +178,7 @@ export default function App() {
           </View>
         )}
       </ScrollView>
-      <StatusBar style="auto"/>
+      <StatusBar style="light"/>
     </View>
   );
 }
