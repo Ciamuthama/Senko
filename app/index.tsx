@@ -1,11 +1,13 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { pick, types } from "react-native-document-picker";
+
 import {
   StyleSheet,
   Dimensions,
   ScrollView,
   Pressable,
+  Text
 } from "react-native";
 import { View } from "moti";
 import {
@@ -19,6 +21,7 @@ import ViewShot, { captureRef } from "react-native-view-shot";
 import FastImage from "react-native-fast-image"
 import { StatusBar } from 'expo-status-bar';
 import { Audio } from 'expo-av';
+import {  activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 
 
 export default function App() {
@@ -28,7 +31,8 @@ export default function App() {
   const [showButtons, setShowButtons] = useState(false);
   const Width = Dimensions.get("screen").width;
   const Height = Dimensions.get("screen").height;
-  const [sound, setSound] = useState<Audio.Sound>();
+  const [sounds, setSounds] = useState<Audio.Sound | null>(null);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
 
   const open = useMemo(
     () => async () => {
@@ -56,44 +60,65 @@ export default function App() {
     []
   );
 
-  useEffect(() => {
-    const loadSound = async () => {
+  const selectAudio = useMemo(
+    () => async () => {
       try {
-        const { sound } = await Audio.Sound.createAsync(
-          require('./assets/bell.mp3')
-        );
-        setSound(sound);
-      } catch (error) {
-        console.error('Error loading sound:', error);
-      }
-    };
+        const [result] = await pick({
+          mode: "open",
+          type: [types.audio],
+        });
 
-    loadSound();
+        if (result) {
+          setAudioUri(result.uri);
+        }
+      } catch (err) {
+        // see error handling
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+ const createSound = async (audioUri:any) => {
+      const {sound} = await Audio.Sound.createAsync({uri: audioUri})
+      await sound.setIsLoopingAsync(true)
+      setSounds(sound);
+      return sound
+  }
+    
+createSound(audioUri)
+  
 
     return () => {
-      sound?.unloadAsync();
+      sounds?.unloadAsync();
+
     };
-  }, []);
+  }, [audioUri]);
 
   useEffect(() => {
     let interval: any;
-    if (isAnimating && sound && image.length > 0) {
+    if (isAnimating && sounds && image.length > 0) {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
+        sounds.playAsync();
+        activateKeepAwakeAsync()
       }, 200); // Change the interval duration as needed
-      sound.playAsync();
     }
 
     return () => {
       clearInterval(interval);
-      sound?.stopAsync();
     };
-  }, [currentIndex, image.length, isAnimating, sound]);
+  }, [currentIndex, image.length, isAnimating, sounds]);
 
   const handleImagePress = () => {
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
-    sound?.pauseAsync();
+    if (!isAnimating) {
+      sounds?.playAsync();
+    } else {
+      sounds?.pauseAsync();
+      deactivateKeepAwake()
+    }
   };
 
   const handlePrevious = () => {
@@ -136,6 +161,13 @@ export default function App() {
           onPress={open}
           style={styles.title}
         />
+         <MaterialIcons
+          name="music-note"
+          size={24}
+          color="white"
+          onPress={selectAudio}
+          style={styles.title}
+        />
         <Fontisto
           name="share"
           size={24}
@@ -154,6 +186,7 @@ export default function App() {
           <ViewShot ref={ref}>
             <FastImage source={{ uri: img, priority:FastImage.priority.high}} style={{height:Height, width:Width}} resizeMode={FastImage.resizeMode.cover} />
           </ViewShot>
+          
           <LinearGradient
             colors={["transparent", "rgba(0,0,0,0.8)"]}
             style={styles.backgroundTwo}
