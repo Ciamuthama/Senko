@@ -4,6 +4,7 @@ import { useFonts, Nunito_700Bold, Nunito_500Medium, Nunito_600SemiBold } from '
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated'
 import 'react-native-gesture-handler'
 
@@ -48,8 +49,10 @@ function RootLayoutNav() {
  
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack>
         <Stack.Screen name="index" options={{ headerShown: false, navigationBarColor:"transparent"}} />
       </Stack>
+    </GestureHandlerRootView>
   );
 }

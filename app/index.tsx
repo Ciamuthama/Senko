@@ -1,5 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { pick, types } from "react-native-document-picker";
 
 import {
@@ -7,32 +13,53 @@ import {
   Dimensions,
   ScrollView,
   Pressable,
-  Text
+  ImageBackground,
+  Text,
+  Button,
 } from "react-native";
 import { View } from "moti";
 import {
   MaterialIcons,
   AntDesign,
   Fontisto,
+  FontAwesome5,
 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Share from "react-native-share";
 import ViewShot, { captureRef } from "react-native-view-shot";
-import FastImage from "react-native-fast-image"
-import { StatusBar } from 'expo-status-bar';
-import { Audio } from 'expo-av';
-import {  activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-
+import FastImage from "react-native-fast-image";
+import { StatusBar } from "expo-status-bar";
+import { Audio } from "expo-av";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetModalProvider,
+  useBottomSheet,
+  useBottomSheetModal,
+} from "@gorhom/bottom-sheet";
 
 export default function App() {
   const [image, setImage] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(true);
   const [showButtons, setShowButtons] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(true);
   const Width = Dimensions.get("screen").width;
   const Height = Dimensions.get("screen").height;
   const [sounds, setSounds] = useState<Audio.Sound | null>(null);
-  const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [audioUri, setAudioUri] = useState<any[]>([]);
+
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["11%", "12%"], []);
+
+  const handlePresentModalPress = useCallback(() => {
+    bottomSheetModalRef.current?.present();
+  }, []);
+
+  const dismiss = useCallback(() => {
+    bottomSheetModalRef.current?.close();
+  }, []);
 
   const open = useMemo(
     () => async () => {
@@ -63,35 +90,41 @@ export default function App() {
   const selectAudio = useMemo(
     () => async () => {
       try {
-        const [result] = await pick({
+        const result = await pick({
           mode: "open",
           type: [types.audio],
         });
 
         if (result) {
-          setAudioUri(result.uri);
+          const audioArr = result;
+          setAudioUri(audioArr);
+        }
+
+        if (result.length > 0) {
+          setImgIndex(0);
         }
       } catch (err) {
         // see error handling
       }
+      handleImagePress();
     },
     []
   );
 
   useEffect(() => {
- const createSound = async (audioUri:any) => {
-      const {sound} = await Audio.Sound.createAsync({uri: audioUri})
-      await sound.setIsLoopingAsync(true)
+    const createSound = async (audioUri: any) => {
+      const { sound } = await Audio.Sound.createAsync({
+        uri: audioUri[imgIndex]?.uri,
+      });
+      await sound.setIsLoopingAsync(true);
       setSounds(sound);
-      return sound
-  }
-    
-createSound(audioUri)
-  
+      return sound;
+    };
+
+    createSound(audioUri);
 
     return () => {
       sounds?.unloadAsync();
-
     };
   }, [audioUri]);
 
@@ -101,7 +134,8 @@ createSound(audioUri)
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
-        activateKeepAwakeAsync()
+
+        activateKeepAwakeAsync();
       }, 200); // Change the interval duration as needed
     }
 
@@ -113,12 +147,9 @@ createSound(audioUri)
   const handleImagePress = () => {
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
-    if (!isAnimating) {
-      sounds?.playAsync();
-    } else {
-      sounds?.pauseAsync();
-      deactivateKeepAwake()
-    }
+    dismiss();
+    sounds?.pauseAsync();
+    deactivateKeepAwake();
   };
 
   const handlePrevious = () => {
@@ -147,72 +178,158 @@ createSound(audioUri)
     } catch (error) {}
   };
 
-  const img =
-    image[currentIndex]?.uri ||
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/No-Image-Placeholder.svg/500px-No-Image-Placeholder.svg.png?20200912122019";
+  const img = image[currentIndex]?.uri;
 
   return (
-    <View style={{backgroundColor:"white",backfaceVisibility:"hidden"}}>
-      <View style={styles.titleContainer}>
-        <MaterialIcons
-          name="add-a-photo"
-          size={24}
-          color="white"
-          onPress={open}
-          style={styles.title}
-        />
-         <MaterialIcons
-          name="music-note"
-          size={24}
-          color="white"
-          onPress={selectAudio}
-          style={styles.title}
-        />
-        <Fontisto
-          name="share"
-          size={24}
-          color="white"
-          onPress={share}
-          style={styles.title}
-        />
-      </View>
+    <BottomSheetModalProvider>
+      <ImageBackground
+        source={{}}
+        style={{ flex: 1, justifyContent: "center" }}
+        resizeMode="contain"
+      >
+        <View
+          style={{
+            position: "absolute",
+            top: 40,
+            left: Width / 2.27,
+            borderBottomWidth: 2,
+            borderColor: "white",
+            borderRadius: 2,
+            zIndex: 10,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 18,
+              fontFamily: "Nunito_600SemiBold",
+              color: "white",
+            }}
+          >
+            Senkō
+          </Text>
+        </View>
+        <View>
+          <BottomSheetModal
+            ref={bottomSheetModalRef}
+            index={1}
+            snapPoints={snapPoints}
+          >
+            <AntDesign
+              name="close"
+              color={"black"}
+              size={15}
+              onPress={dismiss}
+              style={{ marginLeft: Width - 30 }}
+            />
+            <BottomSheetView style={styles.titleContainer}>
+              <Pressable
+                style={{ justifyContent: "center", alignItems: "center" }}
+                onPress={open}
+              >
+                <Text>
+                  <MaterialIcons name="add-a-photo" size={24} color="black" />
+                </Text>
+                <Text style={{ fontFamily: "Nunito_500Medium" }}>Photo</Text>
+              </Pressable>
 
-      <ScrollView showsVerticalScrollIndicator={false} overScrollMode="never">
-        <Pressable onPress={handleImagePress}>
-          <LinearGradient
-            colors={["rgba(0,0,0,0.5)", "transparent"]}
-            style={styles.background}
-          />
-          <ViewShot ref={ref}>
-            <FastImage source={{ uri: img, priority:FastImage.priority.high}} style={{height:Height, width:Width}} resizeMode={FastImage.resizeMode.cover} />
-          </ViewShot>
-          
-          <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.8)"]}
-            style={styles.backgroundTwo}
-          />
-        </Pressable>
-        {showButtons && (
-          <View style={styles.ButtonContainer} transition={{ type: "decay" }}>
-            <AntDesign
-              name="swapleft"
-              size={25}
-              color="white"
-              onPress={handlePrevious}
-              style={styles.buttonBottom}
-            />
-            <AntDesign
-              name="swapright"
-              size={25}
-              color="white"
-              onPress={handleNext}
-              style={styles.buttonBottom}
-            />
+              <Pressable
+                style={{ justifyContent: "center", alignItems: "center" }}
+                onPress={selectAudio}
+              >
+                <Text>
+                  <MaterialIcons name="music-note" size={24} color="black" />
+                </Text>
+                <Text style={{ fontFamily: "Nunito_500Medium" }}>Music</Text>
+              </Pressable>
+
+              <Pressable
+                style={{ justifyContent: "center", alignItems: "center" }}
+                onPress={share}
+              >
+                <Text>
+                  <MaterialIcons name="share" size={24} color="black" />
+                </Text>
+                <Text style={{ fontFamily: "Nunito_500Medium" }}>Share</Text>
+              </Pressable>
+            </BottomSheetView>
+          </BottomSheetModal>
+          <View>
+            <Pressable onPress={handleImagePress}>
+              <LinearGradient
+                colors={["rgba(0,0,0,0.5)", "transparent"]}
+                style={styles.background}
+              />
+              <ViewShot ref={ref}>
+                <FastImage
+                  source={{ uri: img, priority: FastImage.priority.high }}
+                  style={{ height: Height, width: Width }}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              </ViewShot>
+
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.8)"]}
+                style={styles.backgroundTwo}
+              />
+            </Pressable>
           </View>
-        )}
-      </ScrollView>
-      <StatusBar style="light"/>
-    </View>
+
+          <Pressable
+            style={{
+              position: "absolute",
+              bottom: 20,
+              left: Width - 230,
+              zIndex: 10,
+              backgroundColor: "white",
+              borderRadius: 10,
+              paddingHorizontal: 15,
+              paddingVertical: 5,
+            }}
+            onPress={handlePresentModalPress}
+          >
+            <MaterialIcons name="add" size={24} color="black" />
+          </Pressable>
+
+          {showButtons && (
+            <View
+              style={{
+                position: "absolute",
+                left: Width / 2,
+                bottom: Height / 2,
+                zIndex: 100,
+              }}
+            >
+              <FontAwesome5
+                name="play"
+                size={40}
+                color="rgba(225,255,255,0.2)"
+              />
+            </View>
+          )}
+          {showButtons && (
+            <View style={styles.ButtonContainer} transition={{ type: "decay" }}>
+              <AntDesign
+                name="swapleft"
+                size={25}
+                color="white"
+                onPress={handlePrevious}
+                style={styles.buttonBottom}
+              />
+              <Text>{audioUri[imgIndex]?.name}</Text>
+              <AntDesign
+                name="swapright"
+                size={25}
+                color="white"
+                onPress={handleNext}
+                style={styles.buttonBottom}
+              />
+            </View>
+          )}
+
+          <StatusBar style="light" />
+        </View>
+      </ImageBackground>
+    </BottomSheetModalProvider>
   );
 }
 
@@ -223,30 +340,14 @@ const styles = StyleSheet.create({
   },
 
   titleContainer: {
-    position: "absolute",
+    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    top: 50,
-    zIndex: 1,
     width: "100%",
-  },
-  title: {
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
-    paddingVertical: 5,
     paddingHorizontal: 10,
-    marginHorizontal: 10,
-    shadowColor: "rgba(31, 38, 135, 0.37)",
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowRadius: 32,
-    shadowOpacity: 1,
-    elevation: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.18)",
+    marginVertical: 10,
   },
+
   buttonOpen: {
     margin: 24,
     backgroundColor: "#fff",
@@ -265,9 +366,9 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.9)",
   },
   buttonBottom: {
-    backgroundColor: "rgba(255, 255, 255, 0.10)",
-    paddingVertical: 10,
+    backgroundColor: "rgba(255, 255, 255, 0.30)",
     paddingHorizontal: 15,
+    paddingVertical: 5,
     shadowColor: "rgba(31, 38, 135, 0)",
     shadowOffset: {
       width: 0,
@@ -277,8 +378,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     elevation: 5,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.28)",
   },
   ButtonContainer: {
     flex: 1,
@@ -286,7 +385,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     position: "absolute",
-    bottom: 60,
+    bottom: 20,
     left: 0,
     right: 0,
     zIndex: 1,

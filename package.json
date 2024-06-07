@@ -15,10 +15,13 @@
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo/vector-icons": "^14.0.0",
+    "@gorhom/bottom-sheet": "^4.6.3",
     "@homielab/react-native-auto-scroll": "^0.0.10",
     "@react-navigation/native": "^6.0.2",
     "expo": "~50.0.19",
+    "expo-av": "~13.10.6",
     "expo-font": "~11.10.3",
+    "expo-keep-awake": "~12.8.2",
     "expo-linear-gradient": "~12.7.2",
     "expo-linking": "~6.2.2",
     "expo-media-library": "~15.9.2",
@@ -41,9 +44,7 @@
     "react-native-share": "^10.2.0",
     "react-native-sound": "^0.11.2",
     "react-native-view-shot": "^3.8.0",
-    "react-native-web": "~0.19.6",
-    "expo-av": "~13.10.6",
-    "expo-keep-awake": "~12.8.2"
+    "react-native-web": "~0.19.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
