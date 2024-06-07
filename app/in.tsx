@@ -1,41 +1,30 @@
-// import { useEffect, useState } from 'react';
-// import { View, StyleSheet, Button } from 'react-native';
-// import { Audio } from 'expo-av';
+import React from 'react';
+import { View, Platform, StyleSheet } from 'react-native';
 
-// export default function App() {
-//   const [sound, setSound] = useState();
+const App = () => {
+  return (
+    <View style={styles.box}></View>
+  );
+};
 
-//   async function playSound() {
-//     console.log('Loading Sound');
-//     const { sound } = await Audio.Sound.createAsync( require('../assets/audio/bell.mp3')
-//     );
-//     setSound(sound);
+const styles = StyleSheet.create({
+  box: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(220, 46, 170, 0.4),rgba(220, 223, 170, 0.9)',
+        shadowOffset: { width:5, height: 5 },
+        shadowOpacity: 1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+});
 
-//     console.log('Playing Sound');
-//     await sound.playAsync();
-//   }
-
-//   useEffect(() => {
-//     return sound
-//       ? () => {
-//           console.log('Unloading Sound');
-//           sound.unloadAsync();
-//         }
-//       : undefined;
-//   }, [sound]);
-
-//   return (
-//     <View style={styles.container}>
-//       <Button title="Play Sound" onPress={playSound} />
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     backgroundColor: '#ecf0f1',
-//     padding: 10,
-//   },
-// });
+export default App;

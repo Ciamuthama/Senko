@@ -17,7 +17,7 @@ import {
   Text,
   Button,
 } from "react-native";
-import { View } from "moti";
+import { MotiView, View } from "moti";
 import {
   MaterialIcons,
   AntDesign,
@@ -38,6 +38,7 @@ import {
   useBottomSheet,
   useBottomSheetModal,
 } from "@gorhom/bottom-sheet";
+import { Easing } from "react-native-reanimated";
 
 export default function App() {
   const [image, setImage] = useState<any[]>([]);
@@ -49,12 +50,12 @@ export default function App() {
   const Height = Dimensions.get("screen").height;
   const [sounds, setSounds] = useState<Audio.Sound | null>(null);
   const [audioUri, setAudioUri] = useState<any[]>([]);
-
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["11%", "12%"], []);
+  const snapPoints = useMemo(() => ["11%", "13%"], []);
 
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
+    handleImagePress();
   }, []);
 
   const dismiss = useCallback(() => {
@@ -195,7 +196,7 @@ export default function App() {
             borderBottomWidth: 2,
             borderColor: "white",
             borderRadius: 2,
-            zIndex: 10,
+            zIndex: 30,
           }}
         >
           <Text
@@ -256,7 +257,7 @@ export default function App() {
           <View>
             <Pressable onPress={handleImagePress}>
               <LinearGradient
-                colors={["rgba(0,0,0,0.5)", "transparent"]}
+                colors={["rgba(0,0,0,0.7)", "transparent"]}
                 style={styles.background}
               />
               <ViewShot ref={ref}>
@@ -274,12 +275,37 @@ export default function App() {
             </Pressable>
           </View>
 
+          {[...Array(1).keys()].map((index) => {
+          return(
+            <MotiView
+            from={{opacity:0.5,scale:0.5}}
+            animate={{opacity:0.5,scale:1.2}}
+            transition={{
+              type:"timing",
+              duration:3000,
+              easing: Easing.out(Easing.ease),
+              delay:index * 200,
+              loop:true,
+            }}
+              style={{
+                position: "absolute",
+                bottom: 21.5,
+                left: Width - 230,
+                zIndex: 5,
+                backgroundColor: "white",
+                borderRadius: 10,
+                paddingHorizontal: 27,
+                paddingVertical: 16,
+              }}
+              key={index}
+            />
+          )})}
           <Pressable
             style={{
               position: "absolute",
               bottom: 20,
               left: Width - 230,
-              zIndex: 10,
+              zIndex: 20,
               backgroundColor: "white",
               borderRadius: 10,
               paddingHorizontal: 15,
@@ -294,14 +320,14 @@ export default function App() {
             <View
               style={{
                 position: "absolute",
-                left: Width / 2,
+                left: Width / 2.2,
                 bottom: Height / 2,
                 zIndex: 100,
               }}
             >
               <FontAwesome5
                 name="play"
-                size={40}
+                size={50}
                 color="rgba(225,255,255,0.2)"
               />
             </View>
@@ -315,7 +341,6 @@ export default function App() {
                 onPress={handlePrevious}
                 style={styles.buttonBottom}
               />
-              <Text>{audioUri[imgIndex]?.name}</Text>
               <AntDesign
                 name="swapright"
                 size={25}
@@ -369,7 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.30)",
     paddingHorizontal: 15,
     paddingVertical: 5,
-    shadowColor: "rgba(31, 38, 135, 0)",
+    shadowColor: "rgba(31, 38, 135, 0),",
     shadowOffset: {
       width: 0,
       height: 8,
@@ -397,7 +422,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     height: 500,
-    zIndex: 100,
+    zIndex: 20,
   },
   backgroundTwo: {
     position: "absolute",
@@ -405,6 +430,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 700,
-    zIndex: 100,
+    zIndex: 20,
   },
 });
