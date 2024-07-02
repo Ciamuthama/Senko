@@ -8,9 +8,8 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#FFFFFF"
+      "image": "./assets/images/splash.jpg",
+      "resizeMode": "cover"
     },
     "assetBundlePatterns": [
       "**/*"

@@ -43,7 +43,9 @@
     "react-native-share": "^10.2.0",
     "react-native-sound": "^0.11.2",
     "react-native-view-shot": "^3.8.0",
-    "react-native-web": "~0.19.6"
+    "react-native-web": "~0.19.6",
+    "lottie-react-native": "6.5.1",
+    "expo-blur": "~12.9.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
