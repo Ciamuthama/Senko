@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "Senkō",
-    "slug": "Senkō",
+    "slug": "senko",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/adaptive-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splash.jpg",
+      "image": "./assets/images/splash.png",
       "resizeMode": "cover"
     },
     "assetBundlePatterns": [

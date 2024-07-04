@@ -51,8 +51,7 @@ function RootLayoutNav() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack initialRouteName="index">
-        <Stack.Screen name="index" options={{ headerShown: false, navigationBarColor:"transparent"}} />
-        <Stack.Screen name="home" options={{ headerShown: false, navigationBarColor:"transparent"}} />
+        <Stack.Screen name="index" options={{ headerShown: false, navigationBarColor:"transparent",navigationBarHidden:true}} />
       </Stack>
     </GestureHandlerRootView>
   );
