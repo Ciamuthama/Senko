@@ -51,6 +51,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7612530d-c948-4439-902e-4a8ecd0ae87f"
+      }
+    },
+    "owner": "ciamuthama"
   }
 }
