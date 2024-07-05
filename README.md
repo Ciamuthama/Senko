@@ -1,6 +1,6 @@
-## PicMash
+## Senkō
 
-PicMash is an exciting app that allows you to create dynamic and engaging slideshows from your photo albums in just a few taps! Whether you're looking to share memories with friends or create captivating content for social media, PicMash has you covered.
+Senkō is an exciting app that allows you to create dynamic and engaging slideshows from your photo albums in just a few taps! Whether you're looking to share memories with friends or create captivating content for social media, PicMash has you covered.
 
 ### Core Functionality:
 
@@ -24,4 +24,4 @@ PicMash is an exciting app that allows you to create dynamic and engaging slides
 - **Enhanced Social Sharing:** Integrate with popular music app providers like Spotify, Apple Music, and YouTube Music to access a wide range of tracks for your slideshows.
 - **Expanded Social Sharing Options:** Share your slideshows on a variety of social media platforms to reach a wider audience and inspire others with your creations.
 
-Stay tuned for these exciting updates and more as we continue to evolve and improve PicMash to meet your creative needs!
+Stay tuned for these exciting updates and more as we continue to evolve and improve Senkō to meet your creative needs!
