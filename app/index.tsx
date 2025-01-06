@@ -6,14 +6,16 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { pick, types } from "react-native-document-picker";
-import {Colors,  Hint,Text, Assets, Incubator, FeatureHighlight} from 'react-native-ui-lib';
+import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
+
 import {
   StyleSheet,
   Dimensions,
   ScrollView,
   Pressable,
-  ImageBackground,
+  Image,
+  Text,
   Button,
   TouchableOpacity,
 } from "react-native";
@@ -39,25 +41,25 @@ import {
   useBottomSheetModal,
 } from "@gorhom/bottom-sheet";
 import { Easing } from "react-native-reanimated";
-
-
+import { BlurView } from "expo-blur";
 
 export default function App() {
-  const [image, setImage] = useState<any[]>([]);
+  const [image, setImage] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showButtons, setShowButtons] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
-  const Width = Dimensions.get("screen").width;
+  const Width = Dimensions.get("window").width;
   const Height = Dimensions.get("screen").height;
   const [sounds, setSounds] = useState<Audio.Sound | null>(null);
-  const [audioUri, setAudioUri] = useState<any[]>([]);
+  const [audioUri, setAudioUri] = useState<
+    DocumentPicker.DocumentPickerAsset[]
+  >([]);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["11%", "13%"], []);
 
   const handlePresentModalPress = useCallback(() => {
     bottomSheetModalRef.current?.present();
-
   }, []);
 
   const dismiss = useCallback(() => {
@@ -67,21 +69,22 @@ export default function App() {
   const open = useMemo(
     () => async () => {
       try {
-        const results = await pick({
-          mode: "open",
-          allowMultiSelection: true,
-          type: [types.images],
+        let result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 1,
+          allowsMultipleSelection: true,
         });
-        sounds?.unloadAsync()
-        if (results) {
-          const ImgArr = results;
-          setImage(ImgArr);
-          sounds?.unloadAsync()
+
+        if (!result.canceled) {
+          setImage(result.assets);
+        }
+        if (result.assets) {
+          setImage(result.assets);
         } else {
-          console.error(results);
+          console.error(result);
         }
 
-        if (results.length > 0) {
+        if (result.assets?.length! > 0) {
           setCurrentIndex(0);
         }
       } catch (err) {
@@ -92,35 +95,37 @@ export default function App() {
     []
   );
 
+  let audio = {};
   const selectAudio = useMemo(
     () => async () => {
       try {
-        const result = await pick({
-          mode: "open",
-          type: [types.audio],
+        const result = await DocumentPicker.getDocumentAsync({
+          type: "audio/*",
+          copyToCacheDirectory: true,
+          multiple: true,
         });
 
-        if (result) {
-          const audioArr = result;
+        if (result.assets) {
+          const audioArr = result.assets;
           setAudioUri(audioArr);
+          console.log(audioUri);
         }
 
-        if (result.length > 0) {
+        if (result.assets?.length! > 0) {
           setImgIndex(0);
         }
       } catch (err) {
         // see error handling
       }
-      
     },
     []
   );
 
   useEffect(() => {
     const createSound = async (audioUri: any) => {
-      const { sound } = await Audio.Sound.createAsync({
-        uri: audioUri[imgIndex]?.uri || "https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/D62cve7r17t2kJuNQdrhG7UzlFi5VLbE2btbU2Fa.mp3",
-      });
+      const { sound } = await Audio.Sound.createAsync(
+        require("@/assets/audio/ed.mp3") || { uri: audioUri[imgIndex].uri }
+      );
       await sound.setIsLoopingAsync(true);
       setSounds(sound);
       return sound;
@@ -140,7 +145,7 @@ export default function App() {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
         activateKeepAwakeAsync();
-      }, 200); // Change the interval duration as needed
+      }, 200);
     }
 
     return () => {
@@ -149,11 +154,11 @@ export default function App() {
   }, [currentIndex, image.length, isAnimating, sounds]);
 
   const handleImagePress = () => {
+    sounds?.pauseAsync();
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
     dismiss();
-    sounds?.pauseAsync();
-    deactivateKeepAwake();
+    activateKeepAwakeAsync();
   };
 
   const handlePrevious = () => {
@@ -170,9 +175,13 @@ export default function App() {
       const uri = await captureRef(ref, {
         format: "jpg",
         quality: 1,
+        result: "base64",
       });
 
-      Share.open({ title: image[currentIndex].fileName, url: uri })
+      Share.open({
+        title: image[currentIndex].fileName!,
+        url: image[currentIndex].uri,
+      })
         .then((res) => {
           console.log(res);
         })
@@ -182,15 +191,12 @@ export default function App() {
     } catch (error) {}
   };
 
-
-
-
-  const img = image[currentIndex]?.uri ? {uri: image[currentIndex].uri} : require("../assets/images/background.jpg");
+  const img = image[currentIndex]?.uri
+    ? { uri: image[currentIndex].uri, priority: FastImage.priority.high }
+    : require("../assets/images/background.jpg");
   return (
     <BottomSheetModalProvider>
-      <View
-        style={{ flex: 1, justifyContent: "center" }}
-      >
+      <View style={{ flex: 1, justifyContent: "center" }}>
         <View
           style={{
             position: "absolute",
@@ -226,11 +232,10 @@ export default function App() {
               style={{ marginLeft: Width - 30 }}
             />
             <BottomSheetView style={styles.titleContainer}>
-               <Pressable
+              <Pressable
                 style={{ justifyContent: "center", alignItems: "center" }}
                 onPress={open}
               >
-  
                 <Text>
                   <MaterialIcons name="add-a-photo" size={24} color="black" />
                 </Text>
@@ -259,17 +264,31 @@ export default function App() {
           </BottomSheetModal>
           <View>
             <Pressable onPress={handleImagePress}>
-              <LinearGradient
-                colors={["rgba(0,0,0,0.7)", "transparent"]}
-                style={styles.background}
-              />
               <ViewShot ref={ref}>
                 <FastImage
-                  source={ img }
-                  style={{ height: Height, width: Width }}
-                  resizeMode={FastImage.resizeMode.cover}
+                  source={img}
+                  style={{
+                    height: Height,
+                    width: Width,
+                    position: "relative",
+                    zIndex: 0,
+                    marginHorizontal: "auto",
+                  }}
+                  resizeMode={FastImage.resizeMode.contain}
                 />
               </ViewShot>
+
+              <Image
+                source={{ uri: image[0]?.uri }}
+                style={{
+                  height: Height,
+                  width: Width,
+                  position: "absolute",
+                  zIndex: -1,
+                }}
+                resizeMode="stretch"
+                blurRadius={100}
+              />
 
               <LinearGradient
                 colors={["transparent", "rgba(0,0,0,0.8)"]}
@@ -279,31 +298,22 @@ export default function App() {
           </View>
 
           {[...Array(1).keys()].map((index) => {
-          return(
-            <MotiView
-            from={{opacity:0.5,scale:0.5}}
-            animate={{opacity:0.5,scale:1.2}}
-            transition={{
-              type:"timing",
-              duration:3000,
-              easing: Easing.out(Easing.ease),
-              delay:index * 200,
-              loop:true,
-            }}
-              style={{
-                position: "absolute",
-                bottom: 30,
-                left: Width - 230,
-                zIndex: 5,
-                backgroundColor: "white",
-                borderRadius: 10,
-                paddingHorizontal: 27,
-                paddingVertical: 16,
-              }}
-              key={index}
-              
-            />
-          )})}
+            return (
+              <MotiView
+                style={{
+                  position: "absolute",
+                  bottom: 30,
+                  left: Width - 230,
+                  zIndex: 5,
+                  backgroundColor: "white",
+                  borderRadius: 10,
+                  paddingHorizontal: 27,
+                  paddingVertical: 16,
+                }}
+                key={index}
+              />
+            );
+          })}
           <TouchableOpacity
             style={{
               position: "absolute",
@@ -317,7 +327,12 @@ export default function App() {
             }}
             onPress={handlePresentModalPress}
           >
-            <MaterialIcons name="add" size={24} color="black" onPress={handlePresentModalPress} />
+            <MaterialIcons
+              name="add"
+              size={24}
+              color="black"
+              onPress={handlePresentModalPress}
+            />
           </TouchableOpacity>
 
           {showButtons && (
@@ -337,7 +352,7 @@ export default function App() {
             </View>
           )}
           {showButtons && (
-            <View style={styles.ButtonContainer} transition={{ type: "decay" }}>
+            <View style={styles.ButtonContainer}>
               <AntDesign
                 name="swapleft"
                 size={25}
@@ -355,7 +370,7 @@ export default function App() {
             </View>
           )}
 
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </View>
       </View>
     </BottomSheetModalProvider>
