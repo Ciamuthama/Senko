@@ -9,39 +9,52 @@ import React, {
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 
+import Add from "@/assets/images/add.svg";
+
+import Grid from "@/assets/images/grid.svg";
+import Svg, { Path } from "react-native-svg";
+import * as FileSystem from "expo-file-system";
 import {
   StyleSheet,
   Dimensions,
-  ScrollView,
   Pressable,
-  Image,
   Text,
-  Button,
+  FlatList,
+  ImageBackground,
+  Image,
   TouchableOpacity,
+  View
 } from "react-native";
-import { MotiView, View } from "moti";
-import {
-  MaterialIcons,
-  AntDesign,
-  Fontisto,
-  FontAwesome5,
-} from "@expo/vector-icons";
+
+import { FontAwesome5 } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Share from "react-native-share";
 import ViewShot, { captureRef } from "react-native-view-shot";
-import FastImage from "react-native-fast-image";
-import { StatusBar } from "expo-status-bar";
+
+
 import { Audio } from "expo-av";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetModalProvider,
-  useBottomSheet,
-  useBottomSheetModal,
-} from "@gorhom/bottom-sheet";
-import { Easing } from "react-native-reanimated";
+
+
 import { BlurView } from "expo-blur";
+const Width = Dimensions.get("screen").width;
+const Height = Dimensions.get("screen").height;
+
+const cacheImage = async (uri: string, fileName: string): Promise<string> => {
+  const cacheDir = `${FileSystem.cacheDirectory}cached_images/`;
+  await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true });
+  const cachedPath = `${cacheDir}${fileName}`;
+  const fileInfo = await FileSystem.getInfoAsync(cachedPath);
+
+  if (!fileInfo.exists) {
+    if (uri.startsWith("file://")) {
+      await FileSystem.copyAsync({ from: uri, to: cachedPath });
+    } else {
+      await FileSystem.downloadAsync(uri, cachedPath);
+    }
+  }
+  return cachedPath;
+};
 
 export default function App() {
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset[]>([]);
@@ -49,52 +62,52 @@ export default function App() {
   const [showButtons, setShowButtons] = useState(false);
   const [imgIndex, setImgIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(true);
-  const Width = Dimensions.get("window").width;
-  const Height = Dimensions.get("screen").height;
+
   const [sounds, setSounds] = useState<Audio.Sound | null>(null);
   const [audioUri, setAudioUri] = useState<
     DocumentPicker.DocumentPickerAsset[]
   >([]);
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["11%", "13%"], []);
 
-  const handlePresentModalPress = useCallback(() => {
-    bottomSheetModalRef.current?.present();
+  useEffect(() => {
+    const cacheFallback = async () => {
+      const fallbackUrl =
+        "https://cdn.jsdelivr.net/gh/Ciamuthama/cdnfiles@main/background.jpg";
+      const fileName = fallbackUrl.split("/").pop() || "fallback.jpg";
+      await cacheImage(fallbackUrl, fileName);
+    };
+    cacheFallback();
   }, []);
 
-  const dismiss = useCallback(() => {
-    bottomSheetModalRef.current?.close();
-  }, []);
-
+  // Modified open function
   const open = useMemo(
     () => async () => {
       try {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 1,
+          selectionLimit: 4,
           allowsMultipleSelection: true,
         });
 
-        if (!result.canceled) {
-          setImage(result.assets);
-        }
-        if (result.assets) {
-          setImage(result.assets);
-        } else {
-          console.error(result);
-        }
-
-        if (result.assets?.length! > 0) {
+        if (!result.canceled && result.assets) {
+          const cachedAssets = await Promise.all(
+            result.assets.map(async (asset) => ({
+              ...asset,
+              uri: await cacheImage(
+                asset.uri,
+                asset.fileName || Date.now().toString()
+              ),
+            }))
+          );
+          setImage(cachedAssets);
           setCurrentIndex(0);
         }
       } catch (err) {
-        // see error handling
+        console.error("Image picker error:", err);
       }
-      handleImagePress();
+      handlePause();
     },
     []
   );
-
   let audio = {};
   const selectAudio = useMemo(
     () => async () => {
@@ -145,7 +158,7 @@ export default function App() {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
         activateKeepAwakeAsync();
-      }, 200);
+      }, 120);
     }
 
     return () => {
@@ -153,11 +166,10 @@ export default function App() {
     };
   }, [currentIndex, image.length, isAnimating, sounds]);
 
-  const handleImagePress = () => {
+  const handlePause = () => {
     sounds?.pauseAsync();
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
-    dismiss();
     activateKeepAwakeAsync();
   };
 
@@ -174,7 +186,7 @@ export default function App() {
     try {
       const uri = await captureRef(ref, {
         format: "jpg",
-        quality: 1,
+        quality: 0.5,
         result: "base64",
       });
 
@@ -192,204 +204,133 @@ export default function App() {
   };
 
   const img = image[currentIndex]?.uri
-    ? { uri: image[currentIndex].uri, priority: FastImage.priority.high }
-    : require("../assets/images/background.jpg");
+    ? { uri: image[currentIndex].uri }
+    : {uri: "https://cdn.jsdelivr.net/gh/Ciamuthama/cdnfiles@main/background.jpg"};
+
+  const renderItem = ({ item }: { item: ImagePicker.ImagePickerAsset }) => {
+    return (
+      <View>
+        <Image source={{ uri: item.uri }} width={Width} height={Height} />
+      </View>
+    );
+  };
   return (
-    <BottomSheetModalProvider>
-      <View style={{ flex: 1, justifyContent: "center" }}>
-        <View
+    <View style={styles.container}>
+      <Image
+        source={{
+          uri:
+            image[0]?.uri ||
+            "https://cdn.jsdelivr.net/gh/Ciamuthama/cdnfiles@main/background.jpg",
+        }}
+        style={{
+          zIndex: -1,
+          position: "absolute",
+        }}
+        width={Width}
+        height={Height}
+        blurRadius={100}
+      />
+      <BlurView style={styles.blurContainer} tint="dark">
+        <Text
           style={{
-            position: "absolute",
-            top: 40,
-            left: Width / 2.27,
-            borderBottomWidth: 2,
-            borderColor: "white",
-            borderRadius: 2,
-            zIndex: 30,
+            fontSize: 18,
+            fontFamily: "Nunito_600SemiBold",
+            textAlign: "center",
+            color: "white",
           }}
         >
-          <Text
-            style={{
-              fontSize: 18,
-              fontFamily: "Nunito_600SemiBold",
-              color: "white",
-            }}
-          >
-            Senkō
+          Senkō
+        </Text>
+      </BlurView>
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          height: Height,
+          width: Width / 3,
+          top: 0,
+          left: 0,
+          zIndex:100,
+        }}
+        onPress={handlePrevious}
+      >
+      </TouchableOpacity>
+      <Image source={img} width={Width} height={Height} />
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          height: Height,
+          width: Width / 3,
+          top: 0,
+          right: 0,
+        }}
+        onPress={handleNext}
+      >
+      </TouchableOpacity>
+      <BlurView style={styles.ButtonContainer} tint="dark">
+        <TouchableOpacity onPress={handlePause} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          {showButtons ? (
+            <Text>
+              <Svg
+                id="Outline"
+                viewBox="0 0 24 24"
+                width={25}
+                height={25}
+                fill={"white"}
+              >
+                <Path d="M20.494,7.968l-9.54-7A5,5,0,0,0,3,5V19a5,5,0,0,0,7.957,4.031l9.54-7a5,5,0,0,0,0-8.064Zm-1.184,6.45-9.54,7A3,3,0,0,1,5,19V5A2.948,2.948,0,0,1,6.641,2.328,3.018,3.018,0,0,1,8.006,2a2.97,2.97,0,0,1,1.764.589l9.54,7a3,3,0,0,1,0,4.836Z" />
+              </Svg>
+            </Text>
+          ) : image.length == 0 ? (
+            <Text>
+              <Svg
+                id="Outline"
+                viewBox="0 0 24 24"
+                width={25}
+                height={25}
+                fill={"white"}
+              >
+                <Path d="M20.494,7.968l-9.54-7A5,5,0,0,0,3,5V19a5,5,0,0,0,7.957,4.031l9.54-7a5,5,0,0,0,0-8.064Zm-1.184,6.45-9.54,7A3,3,0,0,1,5,19V5A2.948,2.948,0,0,1,6.641,2.328,3.018,3.018,0,0,1,8.006,2a2.97,2.97,0,0,1,1.764.589l9.54,7a3,3,0,0,1,0,4.836Z" />
+              </Svg>
+            </Text>
+          ) : (
+            <Text>
+              <Svg
+                id="Layer_1"
+                data-name="Layer 1"
+                viewBox="0 0 24 24"
+                width={25}
+                height={25}
+                fill={"white"}
+              >
+                <Path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,22c-5.514,0-10-4.486-10-10S6.486,2,12,2s10,4.486,10,10-4.486,10-10,10Zm-1-13v6c0,.552-.448,1-1,1s-1-.448-1-1v-6c0-.552.448-1,1-1s1,.448,1,1Zm4,0v6c0,.552-.448,1-1,1s-1-.448-1-1v-6c0-.552.448-1,1-1s1,.448,1,1Z" />
+              </Svg>
+            </Text>
+          )}
+        </TouchableOpacity>
+        <Pressable onPress={open}>
+          <Text>
+            <Add width={30} height={30} fill={"white"} />
           </Text>
-        </View>
-        <View>
-          <BottomSheetModal
-            ref={bottomSheetModalRef}
-            index={1}
-            snapPoints={snapPoints}
-          >
-            <AntDesign
-              name="close"
-              color={"black"}
-              size={15}
-              onPress={dismiss}
-              style={{ marginLeft: Width - 30 }}
-            />
-            <BottomSheetView style={styles.titleContainer}>
-              <Pressable
-                style={{ justifyContent: "center", alignItems: "center" }}
-                onPress={open}
-              >
-                <Text>
-                  <MaterialIcons name="add-a-photo" size={24} color="black" />
-                </Text>
-                <Text style={{ fontFamily: "Nunito_500Medium" }}>Photo</Text>
-              </Pressable>
-
-              <Pressable
-                style={{ justifyContent: "center", alignItems: "center" }}
-                onPress={selectAudio}
-              >
-                <Text>
-                  <MaterialIcons name="music-note" size={24} color="black" />
-                </Text>
-                <Text style={{ fontFamily: "Nunito_500Medium" }}>Music</Text>
-              </Pressable>
-              <Pressable
-                style={{ justifyContent: "center", alignItems: "center" }}
-                onPress={share}
-              >
-                <Text>
-                  <MaterialIcons name="share" size={24} color="black" />
-                </Text>
-                <Text style={{ fontFamily: "Nunito_500Medium" }}>Share</Text>
-              </Pressable>
-            </BottomSheetView>
-          </BottomSheetModal>
-          <View>
-            <Pressable onPress={handleImagePress}>
-              <ViewShot ref={ref}>
-                <FastImage
-                  source={img}
-                  style={{
-                    height: Height,
-                    width: Width,
-                    position: "relative",
-                    zIndex: 0,
-                    marginHorizontal: "auto",
-                  }}
-                  resizeMode={FastImage.resizeMode.contain}
-                />
-              </ViewShot>
-
-              <Image
-                source={{ uri: image[0]?.uri }}
-                style={{
-                  height: Height,
-                  width: Width,
-                  position: "absolute",
-                  zIndex: -1,
-                }}
-                resizeMode="stretch"
-                blurRadius={100}
-              />
-
-              <LinearGradient
-                colors={["transparent", "rgba(0,0,0,0.8)"]}
-                style={styles.backgroundTwo}
-              />
-            </Pressable>
-          </View>
-
-          {[...Array(1).keys()].map((index) => {
-            return (
-              <MotiView
-                style={{
-                  position: "absolute",
-                  bottom: 30,
-                  left: Width - 230,
-                  zIndex: 5,
-                  backgroundColor: "white",
-                  borderRadius: 10,
-                  paddingHorizontal: 27,
-                  paddingVertical: 16,
-                }}
-                key={index}
-              />
-            );
-          })}
-          <TouchableOpacity
-            style={{
-              position: "absolute",
-              bottom: 29,
-              left: Width - 230,
-              zIndex: 50,
-              backgroundColor: "white",
-              borderRadius: 10,
-              paddingHorizontal: 15,
-              paddingVertical: 5,
-            }}
-            onPress={handlePresentModalPress}
-          >
-            <MaterialIcons
-              name="add"
-              size={24}
-              color="black"
-              onPress={handlePresentModalPress}
-            />
-          </TouchableOpacity>
-
-          {showButtons && (
-            <View
-              style={{
-                position: "absolute",
-                left: Width / 2.2,
-                bottom: Height / 2,
-                zIndex: 100,
-              }}
-            >
-              <FontAwesome5
-                name="play"
-                size={50}
-                color="rgba(225,255,255,0.2)"
-              />
-            </View>
-          )}
-          {showButtons && (
-            <View style={styles.ButtonContainer}>
-              <AntDesign
-                name="swapleft"
-                size={25}
-                color="white"
-                onPress={handlePrevious}
-                style={styles.buttonBottom}
-              />
-              <AntDesign
-                name="swapright"
-                size={25}
-                color="white"
-                onPress={handleNext}
-                style={styles.buttonBottom}
-              />
-            </View>
-          )}
-
-          <StatusBar style="dark" />
-        </View>
-      </View>
-    </BottomSheetModalProvider>
+        </Pressable>
+        <TouchableOpacity>
+          <Text>
+            <Grid width={25} height={25} fill={"white"} />
+          </Text>
+        </TouchableOpacity>
+      </BlurView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#000",
     flex: 1,
+    justifyContent: "center",
   },
 
   titleContainer: {
-    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
-    paddingHorizontal: 10,
-    marginVertical: 10,
   },
 
   buttonOpen: {
@@ -423,32 +364,65 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderRadius: 10,
   },
-  ButtonContainer: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  blurContainer: {
     position: "absolute",
-    bottom: 29,
+    top: 20,
+    left: Width / 2.6,
+    padding: 10,
+    borderRadius: 50,
+    zIndex: 10,
+    flex: 1,
+    margin: 16,
+    textAlign: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  blurContainer2: {
+    position: "absolute",
     left: 0,
     right: 0,
-    zIndex: 1,
-    marginHorizontal: 10,
+    bottom: 0,
+    width: "100%",
+    height: 100,
   },
+  backgroundLiner: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 100,
+  },
+  background2: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 100,
+  },
+
+  ButtonContainer: {
+    flex: 1,
+    position: "absolute",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 20,
+    alignItems: "center",
+    color: "white",
+    overflow: "hidden",
+    left: Width / 3,
+    bottom: 30,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 50,
+    zIndex: 1,
+  },
+
   background: {
     position: "absolute",
     left: 0,
     right: 0,
     top: 0,
     height: 500,
-    zIndex: 20,
-  },
-  backgroundTwo: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 700,
     zIndex: 20,
   },
 });
