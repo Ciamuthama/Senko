@@ -33,7 +33,7 @@ import ViewShot, { captureRef } from "react-native-view-shot";
 
 
 import { Audio } from "expo-av";
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
+import { useKeepAwake } from 'expo-keep-awake';
 
 
 import { BlurView } from "expo-blur";
@@ -57,6 +57,7 @@ const cacheImage = async (uri: string, fileName: string): Promise<string> => {
 };
 
 export default function App() {
+  useKeepAwake();
   const [image, setImage] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showButtons, setShowButtons] = useState(false);
@@ -157,8 +158,9 @@ export default function App() {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
-        activateKeepAwakeAsync();
+        
       }, 120);
+
     }
 
     return () => {
@@ -170,7 +172,7 @@ export default function App() {
     sounds?.pauseAsync();
     setIsAnimating(!isAnimating);
     setShowButtons(!showButtons);
-    activateKeepAwakeAsync();
+   
   };
 
   const handlePrevious = () => {
