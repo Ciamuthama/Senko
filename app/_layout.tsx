@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts, Nunito_700Bold, Nunito_500Medium, Nunito_600SemiBold } from '@expo-google-fonts/nunito';
+import { useFonts, Montserrat_400Regular} from '@expo-google-fonts/montserrat';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -24,7 +24,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Nunito_500Medium , Nunito_700Bold, Nunito_600SemiBold
+    Montserrat_400Regular
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
