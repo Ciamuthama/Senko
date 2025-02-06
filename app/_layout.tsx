@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts, Montserrat_400Regular} from '@expo-google-fonts/montserrat';
+import { useFonts, Blinker_400Regular} from '@expo-google-fonts/blinker';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -24,7 +24,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
-    Montserrat_400Regular
+    Blinker_400Regular
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.

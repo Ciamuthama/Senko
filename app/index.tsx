@@ -64,8 +64,8 @@ export default function App() {
       try {
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          selectionLimit: 4,
-          quality: 0.2,
+          selectionLimit:20,
+          quality: 1,
           allowsMultipleSelection: true,
           base64: true,
         });
@@ -114,7 +114,7 @@ export default function App() {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
-      }, 165);
+      }, 100);
     }
 
     return () => {
@@ -136,20 +136,30 @@ export default function App() {
     setCurrentIndex((currentIndex + 1) % image.length);
   };
 
-  const img = image[currentIndex]?.uri
-    ? { uri: image[currentIndex].uri }
-    : {
-        uri: "https://cdn.jsdelivr.net/gh/Ciamuthama/cdnfiles@main/background.jpg",
-      };
+  const img = image[currentIndex]?.uri;
 
   return (
     <View style={styles.container}>
-      <View style={{flex:1,position:"absolute",height:"100%", flexDirection: "column",justifyContent:"space-between", alignItems: "center", zIndex: 1,paddingVertical:30,marginHorizontal:"auto",left:0,right:0,}}>
+      <View
+        style={{
+          flex: 1,
+          position: "absolute",
+          height: "100%",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          alignItems: "center",
+          zIndex: 1,
+          paddingVertical: "7%",
+          marginHorizontal: "auto",
+          left: 0,
+          right: 0,
+        }}
+      >
         <BlurView style={styles.blurContainer} tint="dark">
           <Text
             style={{
               fontSize: 18,
-              fontFamily: "Montserrat_400Regular",
+              fontFamily: "Blinker_400Regular",
               textAlign: "center",
               color: "white",
             }}
@@ -162,19 +172,7 @@ export default function App() {
             onPress={handlePause}
             hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
           >
-            {showButtons ? (
-              <Text>
-                <Svg
-                  id="Outline"
-                  viewBox="0 0 24 24"
-                  width={25}
-                  height={25}
-                  fill={"white"}
-                >
-                  <Path d="M20.494,7.968l-9.54-7A5,5,0,0,0,3,5V19a5,5,0,0,0,7.957,4.031l9.54-7a5,5,0,0,0,0-8.064Zm-1.184,6.45-9.54,7A3,3,0,0,1,5,19V5A2.948,2.948,0,0,1,6.641,2.328,3.018,3.018,0,0,1,8.006,2a2.97,2.97,0,0,1,1.764.589l9.54,7a3,3,0,0,1,0,4.836Z" />
-                </Svg>
-              </Text>
-            ) : image.length == 0 ? (
+            {showButtons || image.length == 0 ? (
               <Text>
                 <Svg
                   id="Outline"
@@ -249,7 +247,18 @@ export default function App() {
       {image.length <= 0 ? (
         <Background />
       ) : (
-        <Image source={img} style={{ width: "100%", height: "100%" }} />
+        <>
+          <Image
+            source={img}
+            style={{ width: "100%", height: "100%",zIndex: 0 }}
+          
+          />
+          <Image
+            source={img}
+            style={{ width: "100%", height: "100%",position: "absolute",zIndex: -1 }}
+            blurRadius={100}
+          />
+        </>
       )}
 
       <TouchableOpacity
