@@ -13,6 +13,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ToastAndroid,
+  ActivityIndicator,
+  BackHandler,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
@@ -46,48 +50,52 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showButtons, setShowButtons] = useState(false);
   const [isAnimating, setIsAnimating] = useState(true);
+  const [permissionResponse, requestPermission] = ImagePicker.useMediaLibraryPermissions();
+  const [resize, setResize] = useState(false);
   const [sounds, setSounds] = useState<Audio.Sound | null>(null);
 
-  useEffect(() => {
-    const cacheFallback = async () => {
-      const fallbackUrl =
-        "https://cdn.jsdelivr.net/gh/Ciamuthama/cdnfiles@main/background.jpg";
-      const fileName = fallbackUrl.split("/").pop() || "fallback.jpg";
-      await cacheImage(fallbackUrl, fileName);
-    };
-    cacheFallback();
-  }, []);
+
 
   // Modified open function
   const open = useMemo(
+    
     () => async () => {
       try {
+        if (!permissionResponse?.granted) {
+          const permission = await requestPermission();
+          if (!permission.granted) {
+            return;
+          }
+        }
         let result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          selectionLimit:20,
+          selectionLimit: 20,
           quality: 1,
           allowsMultipleSelection: true,
           base64: true,
-        });
+          legacy: true,
+          
+        })
 
         if (!result.canceled && result.assets) {
-          const cachedAssets = await Promise.all(
-            result.assets.map(async (asset) => ({
-              ...asset,
-              uri: await cacheImage(
-                asset.uri,
-                asset.fileName || Date.now().toString()
-              ),
-            }))
-          );
-          setImage(cachedAssets);
+          setImage(result.assets);
           setCurrentIndex(0);
+          ToastAndroid.show("Your image is loaded, check that all images have been loaded", ToastAndroid.LONG,);
+        }
+
+        if (result.canceled) {
+          ToastAndroid.show("You didn't Pick an image", ToastAndroid.TOP);
         }
       } catch (err) {
+        ToastAndroid.show(
+          "An error occurred please try again",
+          ToastAndroid.LONG
+        );
         console.error("Image picker error:", err);
       }
       handlePause();
     },
+
     []
   );
 
@@ -114,7 +122,7 @@ export default function App() {
       interval = setInterval(() => {
         setCurrentIndex((currentIndex + 1) % image.length);
         sounds.playAsync();
-      }, 100);
+      }, 150);
     }
 
     return () => {
@@ -128,6 +136,9 @@ export default function App() {
     setShowButtons(!showButtons);
   };
 
+  const handleResize = () => {
+    setResize(!resize);
+  };
   const handlePrevious = () => {
     setCurrentIndex((currentIndex - 1 + image.length) % image.length);
   };
@@ -211,7 +222,6 @@ export default function App() {
           </Pressable>
           <TouchableOpacity
             activeOpacity={1}
-            hitSlop={{ top: 30, bottom: 30, left: 20, right: 30 }}
             onPress={() => {
               Clipboard.setImageAsync(image[currentIndex].base64! || "");
               Haptics.notificationAsync(
@@ -224,16 +234,45 @@ export default function App() {
                 width={25}
                 height={25}
                 fill={
-                  showButtons ? "white" : image.length <= 0 ? "gray" : "gray"
+                  showButtons ? "white" : image.length == 0 ? "white" : "gray"
                 }
                 disabled={showButtons}
               />
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={handleResize}>
+            {resize ? (
+              <Text>
+                <Svg
+                  id="Outline"
+                  viewBox="0 0 24 24"
+                  width={25}
+                  height={25}
+                  fill={"white"}
+                >
+                  <Path d="M19,0H5A5,5,0,0,0,0,5V19a5,5,0,0,0,5,5H19a5,5,0,0,0,5-5V5A5,5,0,0,0,19,0Zm3,19a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V5A3,3,0,0,1,5,2H19a3,3,0,0,1,3,3Z" />
+                </Svg>
+              </Text>
+            ) : (
+              <Text>
+                <Svg
+                  id="Layer_1"
+                  data-name="Layer 1"
+                  viewBox="0 0 24 24"
+                  width={25}
+                  height={25}
+                  fill={"white"}
+                >
+                  <Path d="M16,24H8c-2.76,0-5-2.24-5-5V5C3,2.24,5.24,0,8,0h8c2.76,0,5,2.24,5,5v14c0,2.76-2.24,5-5,5ZM8,2c-1.65,0-3,1.35-3,3v14c0,1.65,1.35,3,3,3h8c1.65,0,3-1.35,3-3V5c0-1.65-1.35-3-3-3H8Z" />
+                </Svg>
+              </Text>
+            )}
+          </TouchableOpacity>
         </BlurView>
       </View>
 
       <TouchableOpacity
+        
         style={{
           position: "absolute",
           height: Height,
@@ -241,6 +280,8 @@ export default function App() {
           top: 0,
           left: 0,
           zIndex: 100,
+          
+          
         }}
         onPress={handlePrevious}
       ></TouchableOpacity>
@@ -250,12 +291,18 @@ export default function App() {
         <>
           <Image
             source={img}
-            style={{ width: "100%", height: "100%",zIndex: 0 }}
-          
+            style={{ width: "100%", height: "100%", zIndex: 0 }}
+            contentFit={resize ? "cover" : "contain"}
+           
           />
           <Image
             source={img}
-            style={{ width: "100%", height: "100%",position: "absolute",zIndex: -1 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              zIndex: -1,
+            }}
             blurRadius={100}
           />
         </>
