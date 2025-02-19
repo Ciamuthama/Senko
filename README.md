@@ -4,9 +4,9 @@
 
 #### Key Features:
 
-- **Select Up to 100 Photos**: Easily choose up to 100 photos from your gallery to create a personalized memory flash.
+- **Select Up to 100 Photos**: Easily choose up to 20 photos from your gallery to create a personalized memory flash.
 - **Customizable Audio**: Enhance your memory flash with a soundtrack of your choice. Select an audio clip from your collection or use the default track provided within the app.
-- **Flashy Moments**: Experience your photos like never before. Tap the screen to play your photos in a dynamic slideshow, with each image popping up every 200 milliseconds, creating a rapid, captivating sequence.
+- **Flashy Moments**: Experience your photos like never before. Tap the screen to play your photos in a dynamic slideshow, with each image popping up every 150 milliseconds, creating a rapid, captivating sequence.
 - **Share Your Photos**: Instantly share your favorite photos directly from the app, allowing you to spread joy and memories with friends and family.
 
 #### Upcoming Features:
